@@ -1,21 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace app\controllers;
 
+use app\models\ContactForm;
+use app\models\LoginForm;
+use app\services\UserService;
 use Yii;
+use yii\base\Module;
 use yii\filters\AccessControl;
+use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\Response;
-use yii\filters\VerbFilter;
-use app\models\LoginForm;
-use app\models\ContactForm;
 
 class SiteController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function behaviors()
+    public function __construct(
+        string $id,
+        Module $module,
+        private readonly UserService $userService,
+        array $config = [],
+    ) {
+        parent::__construct($id, $module, $config);
+    }
+
+    public function behaviors(): array
     {
         return [
             'access' => [
@@ -38,10 +48,7 @@ class SiteController extends Controller
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function actions()
+    public function actions(): array
     {
         return [
             'error' => [
@@ -54,56 +61,44 @@ class SiteController extends Controller
         ];
     }
 
-    /**
-     * Displays homepage.
-     *
-     * @return string
-     */
-    public function actionIndex()
+    public function actionIndex(): string
     {
         return $this->render('index');
     }
 
-    /**
-     * Login action.
-     *
-     * @return Response|string
-     */
-    public function actionLogin()
+    public function actionLogin(): Response|string
     {
         if (!Yii::$app->user->isGuest) {
             return $this->goHome();
         }
 
         $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+            if ($this->userService->signIn(
+                $model->login,
+                $model->password,
+                filter_var($model->rememberMe, FILTER_VALIDATE_BOOLEAN),
+            )) {
+                return $this->goBack();
+            }
+            $model->addError('login', 'Incorrect email/phone or password.');
         }
 
         $model->password = '';
+
         return $this->render('login', [
             'model' => $model,
         ]);
     }
 
-    /**
-     * Logout action.
-     *
-     * @return Response
-     */
-    public function actionLogout()
+    public function actionLogout(): Response
     {
         Yii::$app->user->logout();
 
         return $this->goHome();
     }
 
-    /**
-     * Displays contact page.
-     *
-     * @return Response|string
-     */
-    public function actionContact()
+    public function actionContact(): Response|string
     {
         $model = new ContactForm();
         if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
@@ -111,17 +106,13 @@ class SiteController extends Controller
 
             return $this->refresh();
         }
+
         return $this->render('contact', [
             'model' => $model,
         ]);
     }
 
-    /**
-     * Displays about page.
-     *
-     * @return string
-     */
-    public function actionAbout()
+    public function actionAbout(): string
     {
         return $this->render('about');
     }
