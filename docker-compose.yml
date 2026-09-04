@@ -1,0 +1,128 @@
+x-php-environment: &php-environment
+  APP_DOMAIN: ${APP_DOMAIN}
+  YII_ENV: ${YII_ENV}
+  YII_DEBUG: ${YII_DEBUG}
+  COOKIE_VALIDATION_KEY: ${COOKIE_VALIDATION_KEY}
+  DB_HOST: ${DB_HOST}
+  DB_PORT: ${DB_PORT}
+  DB_NAME: ${DB_NAME}
+  DB_USER: ${DB_USER}
+  DB_PASSWORD: ${DB_PASSWORD}
+  REDIS_HOST: ${REDIS_HOST}
+  REDIS_PORT: ${REDIS_PORT}
+  REDIS_DATABASE: ${REDIS_DATABASE}
+  MEMCACHED_HOST: ${MEMCACHED_HOST}
+  MEMCACHED_PORT: ${MEMCACHED_PORT}
+  MAIL_USE_FILE_TRANSPORT: ${MAIL_USE_FILE_TRANSPORT}
+  SMS_USE_FILE_TRANSPORT: ${SMS_USE_FILE_TRANSPORT}
+  QUEUE_EMAIL_CHANNEL: ${QUEUE_EMAIL_CHANNEL}
+  QUEUE_SMS_CHANNEL: ${QUEUE_SMS_CHANNEL}
+
+x-php-app: &php-app
+  image: infotech-yii2-php:8.4-fpm
+  working_dir: /var/www/html
+  environment:
+    <<: *php-environment
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_started
+    memcached:
+      condition: service_started
+  networks:
+    - app
+
+services:
+  php:
+    <<: *php-app
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: infotech-yii2-php
+
+  queue-email:
+    <<: *php-app
+    container_name: infotech-yii2-queue-email
+    command: php yii queue-email/listen --verbose=1
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  queue-sms:
+    <<: *php-app
+    container_name: infotech-yii2-queue-sms
+    command: php yii queue-sms/listen --verbose=1
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: infotech-yii2-nginx
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+    networks:
+      - app
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.infotech-yii2.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.infotech-yii2.entrypoints=web
+      - traefik.http.services.infotech-yii2.loadbalancer.server.port=80
+      - traefik.http.services.infotech-yii2.loadbalancer.passhostheader=true
+
+  mysql:
+    image: mysql:8.0
+    platform: linux/arm64
+    container_name: infotech-yii2-mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - app
+
+  redis:
+    image: redis:7-alpine
+    container_name: infotech-yii2-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - app
+
+  memcached:
+    image: memcached:1.6-alpine
+    container_name: infotech-yii2-memcached
+    command: memcached -m 64
+    networks:
+      - app
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  app:
+    driver: bridge
+  traefik:
+    external: true

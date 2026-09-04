@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+namespace app\services;
+
+use app\exceptions\DuplicateUserException;
+use app\models\User;
+use app\models\UserRole;
+use app\repositories\UserRepository;
+use InvalidArgumentException;
+use yii\base\Security;
+
+class UserService
+{
+    public function __construct(
+        private readonly UserRepository $users,
+        private readonly Security $security,
+    ) {
+    }
+
+    public function createAdmin(string $email, string $phone, string $password): User
+    {
+        return $this->create($email, $phone, $password, UserRole::Administrator, verifyContacts: true);
+    }
+
+    public function register(string $email, string $phone, string $password): User
+    {
+        return $this->create($email, $phone, $password, UserRole::User, verifyContacts: false);
+    }
+
+    private function create(
+        string $email,
+        string $phone,
+        string $password,
+        UserRole $role,
+        bool $verifyContacts,
+    ): User {
+        $email = $this->normalizeEmail($email);
+        $phone = $this->normalizePhone($phone);
+        $this->assertPassword($password);
+        $this->assertUnique($email, $phone);
+
+        $user = new User();
+        $user->email = $email;
+        $user->phone = $phone;
+        $user->password_hash = $this->security->generatePasswordHash($password);
+        $user->auth_key = $this->security->generateRandomString();
+        $user->role = $role->value;
+
+        if ($verifyContacts) {
+            $now = date('Y-m-d H:i:s');
+            $user->email_verified_at = $now;
+            $user->phone_verified_at = $now;
+        }
+
+        $this->users->save($user);
+
+        return $user;
+    }
+
+    private function normalizeEmail(string $email): string
+    {
+        $email = mb_strtolower(trim($email));
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException('Invalid email.');
+        }
+
+        return $email;
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+        $length = strlen($digits);
+        if ($length < 10 || $length > 15) {
+            throw new InvalidArgumentException('Phone must contain 10 to 15 digits.');
+        }
+
+        return $digits;
+    }
+
+    private function assertPassword(string $password): void
+    {
+        if (strlen($password) < 8) {
+            throw new InvalidArgumentException('Password must be at least 8 characters.');
+        }
+    }
+
+    private function assertUnique(string $email, string $phone): void
+    {
+        if ($this->users->existsByEmail($email)) {
+            throw new DuplicateUserException('A user with this email already exists.');
+        }
+        if ($this->users->existsByPhone($phone)) {
+            throw new DuplicateUserException('A user with this phone already exists.');
+        }
+    }
+}

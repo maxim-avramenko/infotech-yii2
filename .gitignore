@@ -1,0 +1,10 @@
+.env
+app/vendor/
+app/runtime/*
+!app/runtime/.gitignore
+app/web/assets/*
+!app/web/assets/.gitignore
+.idea/
+.DS_Store
+/CREDS.md
+/.cursor

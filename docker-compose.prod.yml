@@ -1,0 +1,38 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile.prod
+    image: infotech-yii2-php:8.4-prod
+    restart: unless-stopped
+    volumes: &app-code
+      - ./app:/var/www/html
+      - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/zz-app.ini:ro
+    environment:
+      YII_ENV: ${YII_ENV:-prod}
+      YII_DEBUG: ${YII_DEBUG:-0}
+
+  queue-email:
+    image: infotech-yii2-php:8.4-prod
+    restart: unless-stopped
+    volumes: *app-code
+
+  queue-sms:
+    image: infotech-yii2-php:8.4-prod
+    restart: unless-stopped
+    volumes: *app-code
+
+  nginx:
+    restart: unless-stopped
+    volumes:
+      - ./app:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+  mysql:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  memcached:
+    restart: unless-stopped

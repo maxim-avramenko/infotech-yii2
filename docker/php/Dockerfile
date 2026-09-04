@@ -1,0 +1,46 @@
+FROM php:8.4-fpm-alpine
+
+RUN apk add --no-cache \
+        git \
+        unzip \
+        icu-dev \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        oniguruma-dev \
+        libxml2-dev \
+        libmemcached-dev \
+        zlib-dev \
+        cyrus-sasl-dev \
+        linux-headers \
+        $PHPIZE_DEPS \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo \
+        pdo_mysql \
+        mysqli \
+        gd \
+        zip \
+        mbstring \
+        opcache \
+        intl \
+        bcmath \
+        sockets \
+    && pecl install redis memcached \
+    && docker-php-ext-enable redis memcached \
+    && apk del $PHPIZE_DEPS linux-headers
+
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+COPY php.ini /usr/local/etc/php/conf.d/zz-app.ini
+COPY www.conf /usr/local/etc/php-fpm.d/zz-www.conf
+
+WORKDIR /var/www/html
+
+RUN apk add --no-cache shadow \
+    && usermod -u 1000 www-data \
+    && groupmod -g 1000 www-data \
+    && chown -R www-data:www-data /var/www/html
+
+EXPOSE 9000
