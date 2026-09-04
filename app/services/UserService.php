@@ -9,6 +9,7 @@ use app\models\User;
 use app\models\UserRole;
 use app\repositories\UserRepository;
 use InvalidArgumentException;
+use Yii;
 use yii\base\Security;
 
 class UserService
@@ -27,6 +28,47 @@ class UserService
     public function register(string $email, string $phone, string $password): User
     {
         return $this->create($email, $phone, $password, UserRole::User, verifyContacts: false);
+    }
+
+    public function authenticate(string $login, string $password): ?User
+    {
+        $user = $this->findByLogin($login);
+        if ($user === null || !$user->validatePassword($password)) {
+            return null;
+        }
+
+        return $user;
+    }
+
+    public function signIn(string $login, string $password, bool $rememberMe = false): bool
+    {
+        $user = $this->authenticate($login, $password);
+        if ($user === null) {
+            return false;
+        }
+
+        $duration = $rememberMe ? 3600 * 24 * 30 : 0;
+
+        return Yii::$app->user->login($user, $duration);
+    }
+
+    public function findByLogin(string $login): ?User
+    {
+        $login = trim($login);
+        if ($login === '') {
+            return null;
+        }
+
+        if (str_contains($login, '@')) {
+            return $this->users->findByEmail(mb_strtolower($login));
+        }
+
+        $phone = $this->digits($login);
+        if ($phone === '') {
+            return null;
+        }
+
+        return $this->users->findByPhone($phone);
     }
 
     private function create(
@@ -71,13 +113,18 @@ class UserService
 
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+        $digits = $this->digits($phone);
         $length = strlen($digits);
         if ($length < 10 || $length > 15) {
             throw new InvalidArgumentException('Phone must contain 10 to 15 digits.');
         }
 
         return $digits;
+    }
+
+    private function digits(string $phone): string
+    {
+        return preg_replace('/\D+/', '', $phone) ?? '';
     }
 
     private function assertPassword(string $password): void
