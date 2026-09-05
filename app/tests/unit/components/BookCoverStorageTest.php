@@ -111,7 +111,7 @@ class BookCoverStorageTest extends \Codeception\Test\Unit
     private function uploadedJpeg(int $width, int $height): UploadedFile
     {
         if (!is_dir($this->directory)) {
-            mkdir($this->directory, 0777, true);
+            mkdir($this->directory, 0755, true);
         }
         $path = $this->directory . '/src-' . $width . 'x' . $height . '.jpeg';
         $image = new Imagick();
