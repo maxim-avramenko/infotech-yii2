@@ -114,7 +114,7 @@ class BookCoverStorage
     private function ensureDirectory(): string
     {
         $directory = Yii::getAlias($this->directory);
-        if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
             throw new \RuntimeException('Unable to create books directory.');
         }
 
