@@ -6,7 +6,7 @@ $common = require __DIR__ . '/common.php';
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log', 'queueEmail', 'queueSms'],
+    'bootstrap' => ['log', 'queueEmail', 'queueSms', \app\bootstrap\BookEventsBootstrap::class, \app\bootstrap\UserEventsBootstrap::class],
     'container' => require __DIR__ . '/container.php',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -15,6 +15,11 @@ $config = [
     'components' => $common + [
         'request' => [
             'cookieValidationKey' => env('COOKIE_VALIDATION_KEY'),
+            'trustedHosts' => [
+                '10.0.0.0/8',
+                '172.16.0.0/12',
+                '192.168.0.0/16',
+            ],
         ],
         'session' => [
             'class' => 'yii\redis\Session',

@@ -13,15 +13,29 @@ modules:
         Yii2:
             configFile: 'config/test.php'
 
-# To enable code coverage:
-#coverage:
-#    #c3_url: http://localhost:8080/index-test.php/
-#    enabled: true
-#    #remote: true
-#    #remote_config: '../codeception.yml'
-#    whitelist:
-#        include:
-#            - models/*
-#            - controllers/*
-#            - commands/*
-#            - mail/*
+coverage:
+    enabled: true
+    show_uncovered: true
+    include:
+        - assets/*
+        - bootstrap/*
+        - commands/*
+        - components/*
+        - controllers/*
+        - events/*
+        - exceptions/*
+        - handlers/*
+        - jobs/*
+        - models/*
+        - repositories/*
+        - services/*
+        - widgets/*
+    exclude:
+        - config/*
+        - mail/*
+        - migrations/*
+        - runtime/*
+        - tests/*
+        - vendor/*
+        - views/*
+        - web/*

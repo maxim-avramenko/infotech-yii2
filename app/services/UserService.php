@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\services;
 
+use app\events\UserLoggedInEvent;
 use app\exceptions\DuplicateUserException;
 use app\models\User;
 use app\models\UserRole;
@@ -40,16 +41,26 @@ class UserService
         return $user;
     }
 
-    public function signIn(string $login, string $password, bool $rememberMe = false): bool
-    {
+    public function signIn(
+        string $login,
+        string $password,
+        bool $rememberMe = false,
+        ?string $ipAddress = null,
+        ?string $userAgent = null,
+    ): bool {
         $user = $this->authenticate($login, $password);
         if ($user === null) {
             return false;
         }
 
         $duration = $rememberMe ? 3600 * 24 * 30 : 0;
+        if (!Yii::$app->user->login($user, $duration)) {
+            return false;
+        }
 
-        return Yii::$app->user->login($user, $duration);
+        $this->notifyLoggedIn($user, $ipAddress, $userAgent);
+
+        return true;
     }
 
     public function findByLogin(string $login): ?User
@@ -69,6 +80,58 @@ class UserService
         }
 
         return $this->users->findByPhone($phone);
+    }
+
+    private function notifyLoggedIn(User $user, ?string $ipAddress, ?string $userAgent): void
+    {
+        $email = trim((string) $user->email);
+        if ($email === '') {
+            return;
+        }
+
+        try {
+            Yii::$app->trigger(UserLoggedInEvent::NAME, new UserLoggedInEvent(
+                (int) $user->id,
+                $email,
+                (new \DateTimeImmutable())->format('d.m.Y H:i:s T'),
+                $this->normalizeIp($ipAddress),
+                $this->browserName($userAgent),
+            ));
+        } catch (\Throwable $exception) {
+            Yii::error($exception, __METHOD__);
+        }
+    }
+
+    private function normalizeIp(?string $ipAddress): string
+    {
+        $ip = trim((string) $ipAddress);
+
+        return $ip !== '' ? $ip : 'unknown';
+    }
+
+    private function browserName(?string $userAgent): string
+    {
+        $userAgent = trim((string) $userAgent);
+        if ($userAgent === '') {
+            return 'unknown';
+        }
+
+        $map = [
+            'Edg/' => 'Microsoft Edge',
+            'OPR/' => 'Opera',
+            'Opera' => 'Opera',
+            'Firefox/' => 'Firefox',
+            'CriOS/' => 'Chrome',
+            'Chrome/' => 'Chrome',
+            'Safari/' => 'Safari',
+        ];
+        foreach ($map as $needle => $name) {
+            if (str_contains($userAgent, $needle)) {
+                return $name;
+            }
+        }
+
+        return $userAgent;
     }
 
     private function create(

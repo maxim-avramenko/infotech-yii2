@@ -33,6 +33,11 @@
         "codeception/verify": "^3.0 || ^2.2",
         "symfony/browser-kit": "^6.0 || >=2.7 <=4.2.4"
     },
+    "autoload-dev": {
+        "psr-4": {
+            "tests\\": "tests/"
+        }
+    },
     "config": {
         "allow-plugins": {
             "yiisoft/yii2-composer" : true
@@ -43,6 +48,7 @@
         }
     },
     "scripts": {
+        "test": "codecept run unit",
         "post-install-cmd": [
             "yii\\composer\\Installer::postInstall"
         ],

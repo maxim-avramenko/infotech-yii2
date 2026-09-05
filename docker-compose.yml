@@ -6,6 +6,7 @@ x-php-environment: &php-environment
   DB_HOST: ${DB_HOST}
   DB_PORT: ${DB_PORT}
   DB_NAME: ${DB_NAME}
+  TEST_DB_NAME: ${TEST_DB_NAME:-book_store_test}
   DB_USER: ${DB_USER}
   DB_PASSWORD: ${DB_PASSWORD}
   REDIS_HOST: ${REDIS_HOST}
@@ -15,6 +16,12 @@ x-php-environment: &php-environment
   MEMCACHED_PORT: ${MEMCACHED_PORT}
   MAIL_USE_FILE_TRANSPORT: ${MAIL_USE_FILE_TRANSPORT}
   SMS_USE_FILE_TRANSPORT: ${SMS_USE_FILE_TRANSPORT}
+  SMS_API_URL: ${SMS_API_URL:-https://smspilot.ru/api.php}
+  SMS_API_KEY: ${SMS_API_KEY}
+  SMS_FROM: ${SMS_FROM:-}
+  SMS_TEST: ${SMS_TEST:-1}
+  SMS_CALLBACK_URL: ${SMS_CALLBACK_URL:-}
+  SMS_CALLBACK_METHOD: ${SMS_CALLBACK_METHOD:-post}
   QUEUE_EMAIL_CHANNEL: ${QUEUE_EMAIL_CHANNEL}
   QUEUE_SMS_CHANNEL: ${QUEUE_SMS_CHANNEL}
 
@@ -60,6 +67,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+
+  sms-send:
+    <<: *php-app
+    container_name: infotech-yii2-sms-send
+    command: php yii sms-notification/send
+    depends_on:
+      mysql:
+        condition: service_healthy
 
   nginx:
     image: nginx:1.27-alpine
