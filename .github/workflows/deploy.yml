@@ -7,8 +7,8 @@
 #   sudo mkdir -p /opt/infotech-yii2
 #   sudo git clone git@github.com:<owner>/infotech-yii2.git /opt/infotech-yii2
 # Deploy user needs Docker, and a GitHub deploy key with read access.
-# Traefik on this host uses certresolver "letsencrypt" (DNS-01 Cloudflare).
-# cyprus-shop.online must be in the same Cloudflare account as Traefik's token.
+# Traefik: wildcard demping-bot.kz uses certresolver "letsencrypt" (DNS-01 Cloudflare).
+# cyprus-shop.online is on REG.RU NS, so prod labels use "letsencrypt-tls" (TLS-ALPN-01).
 #
 # Create GitHub Environment "production" (Settings → Environments).
 # Required Environment secrets:
@@ -175,6 +175,9 @@ jobs:
           docker compose run --rm --no-deps --user root php \
             composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
           docker compose up -d
+          docker compose exec -T --user root php \
+            sh -c 'mkdir -p runtime/logs web/assets web/books && chown -R www-data:www-data runtime web/assets web/books'
           docker compose exec -T php php yii migrate --interactive=0
+          docker compose exec -T php php yii cache/flush-schema db --interactive=0
           REMOTE
           rm -f .env
