@@ -55,14 +55,15 @@ class BookAuthorSubscriptionServiceTest extends DbTestCase
         $this->service->subscribe(1, '123');
     }
 
-    public function testSubscribeAllowsDeletedAuthor(): void
+    public function testSubscribeRejectsDeletedAuthor(): void
     {
         $author = $this->createAuthor($this->createUser());
         $author->deleted_at = date('Y-m-d H:i:s');
         $author->save(false, ['deleted_at']);
 
-        $subscription = $this->service->subscribe((int) $author->id, '79001234567');
-        verify($subscription->book_author_id)->equals($author->id);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Author is required.');
+        $this->service->subscribe((int) $author->id, '79001234567');
     }
 
     public function testCreateSmsNotificationsForBookEnqueuesDistinctPhones(): void

@@ -22,13 +22,19 @@ $phone = $identity instanceof User ? $identity->phone : '';
 
 $authorButtons = [];
 foreach ($model->authors as $author) {
-    $authorButtons[] = Html::button($author->getFullName(), [
+    $name = $author->getFullName();
+    if ($author->deleted_at !== null) {
+        $authorButtons[] = Html::encode($name);
+        continue;
+    }
+
+    $authorButtons[] = Html::button($name, [
         'type' => 'button',
         'class' => 'btn btn-link p-0 align-baseline',
         'data-bs-toggle' => 'modal',
         'data-bs-target' => '#author-subscribe-modal',
         'data-author-id' => (string) $author->id,
-        'data-author-name' => $author->getFullName(),
+        'data-author-name' => $name,
     ]);
 }
 ?>

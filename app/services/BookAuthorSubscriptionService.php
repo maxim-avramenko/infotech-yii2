@@ -23,7 +23,7 @@ class BookAuthorSubscriptionService
     public function subscribe(int $authorId, string $phone): BookAuthorSubscription
     {
         $phone = $this->normalizePhone($phone);
-        $author = $this->authors->findByIdIncludingDeleted($authorId);
+        $author = $this->authors->findById($authorId);
         if ($author === null) {
             throw new InvalidArgumentException('Author is required.');
         }
