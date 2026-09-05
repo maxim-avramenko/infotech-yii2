@@ -32,8 +32,18 @@ services:
     volumes:
       - ./app:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.infotech-yii2.rule=Host(`${APP_DOMAIN}`) || Host(`www.${APP_DOMAIN}`)
+      - traefik.http.routers.infotech-yii2.entrypoints=websecure
+      - traefik.http.routers.infotech-yii2.tls=true
+      - traefik.http.routers.infotech-yii2.tls.certresolver=letsencrypt
+      - traefik.http.services.infotech-yii2.loadbalancer.server.port=80
+      - traefik.http.services.infotech-yii2.loadbalancer.passhostheader=true
 
   mysql:
+    platform: linux/amd64
     restart: unless-stopped
 
   redis:

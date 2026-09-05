@@ -7,14 +7,20 @@
 #   sudo mkdir -p /opt/infotech-yii2
 #   sudo git clone git@github.com:<owner>/infotech-yii2.git /opt/infotech-yii2
 # Deploy user needs Docker, and a GitHub deploy key with read access.
+# Traefik on this host uses certresolver "letsencrypt" (DNS-01 Cloudflare).
+# cyprus-shop.online must be in the same Cloudflare account as Traefik's token.
 #
+# Create GitHub Environment "production" (Settings → Environments).
 # Required Environment secrets:
 #   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_PRIVATE_KEY, DEPLOY_SSH_KNOWN_HOSTS
 #   COOKIE_VALIDATION_KEY, MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, DB_PASSWORD,
 #   SMS_API_KEY
 #
+# Required Environment variables:
+#   APP_DOMAIN
+#
 # Optional Environment variables (defaults in this file):
-#   DEPLOY_PATH, DEPLOY_SSH_PORT, APP_DOMAIN, YII_ENV, YII_DEBUG,
+#   DEPLOY_PATH, DEPLOY_SSH_PORT, YII_ENV, YII_DEBUG,
 #   MYSQL_DATABASE, MYSQL_USER, DB_NAME, DB_USER, DB_HOST, DB_PORT,
 #   REDIS_*, MEMCACHED_*, QUEUE_*, MAIL_USE_FILE_TRANSPORT, SMS_USE_FILE_TRANSPORT,
 #   SMS_API_URL, SMS_FROM, SMS_TEST, SMS_CALLBACK_URL, SMS_CALLBACK_METHOD
