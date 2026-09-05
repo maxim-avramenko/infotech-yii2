@@ -43,9 +43,7 @@ class BookAuthorSubscription extends ActiveRecord
             ['book_author_id', 'integer'],
             ['phone', 'string', 'max' => 15],
             ['phone', 'match', 'pattern' => '/^\d+$/'],
-            ['book_author_id', 'exist', 'targetClass' => BookAuthor::class, 'targetAttribute' => 'id', 'filter' => static function ($query): void {
-                $query->includeDeleted();
-            }],
+            ['book_author_id', 'exist', 'targetClass' => BookAuthor::class, 'targetAttribute' => 'id'],
         ];
     }
 

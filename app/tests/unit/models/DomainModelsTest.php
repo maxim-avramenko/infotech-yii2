@@ -110,6 +110,13 @@ class DomainModelsTest extends DbTestCase
         $subForm->phone = '79001234567';
         verify($subForm->validate())->true();
         verify($subForm->attributeLabels()['phone'])->equals('Phone');
+
+        $author->deleted_at = date('Y-m-d H:i:s');
+        $author->save(false, ['deleted_at']);
+        $deletedForm = new BookAuthorSubscriptionForm();
+        $deletedForm->bookAuthorId = $author->id;
+        $deletedForm->phone = '79001234567';
+        verify($deletedForm->validate())->false();
     }
 
     public function testSubscriptionAndSmsNotification(): void

@@ -17,15 +17,7 @@ class BookAuthorSubscriptionForm extends Model
             [['bookAuthorId', 'phone'], 'required'],
             ['bookAuthorId', 'integer'],
             ['phone', 'string', 'max' => 32],
-            [
-                'bookAuthorId',
-                'exist',
-                'targetClass' => BookAuthor::class,
-                'targetAttribute' => 'id',
-                'filter' => static function ($query): void {
-                    $query->includeDeleted();
-                },
-            ],
+            ['bookAuthorId', 'exist', 'targetClass' => BookAuthor::class, 'targetAttribute' => 'id'],
         ];
     }
 
