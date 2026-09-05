@@ -13,6 +13,9 @@ services:
   queue-sms:
     volumes: *app-code
 
+  sms-send:
+    volumes: *app-code
+
   nginx:
     volumes:
       - ./app:/var/www/html

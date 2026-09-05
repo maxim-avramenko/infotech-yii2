@@ -2,8 +2,9 @@
 
 namespace app\components;
 
+use app\jobs\CreateBookSmsNotificationsJob;
 use app\jobs\SendEmailJob;
-use app\jobs\SendSmsJob;
+use app\services\SmsNotificationService;
 use Yii;
 use yii\base\Component;
 use yii\di\Instance;
@@ -13,6 +14,13 @@ class MessageBroker extends Component
 {
     public Queue|string $emailQueue = 'queueEmail';
     public Queue|string $smsQueue = 'queueSms';
+
+    public function __construct(
+        private readonly SmsNotificationService $smsNotifications,
+        $config = [],
+    ) {
+        parent::__construct($config);
+    }
 
     public function init(): void
     {
@@ -32,12 +40,16 @@ class MessageBroker extends Component
         ]));
     }
 
-    public function sms(string $phone, string $text): string|int|null
+    public function sms(string $phone, string $text): int
+    {
+        return $this->smsNotifications->enqueue($phone, $text)->id;
+    }
+
+    public function enqueueBookSubscriberSms(int $bookId): string|int|null
     {
         return $this->smsQueue->push(Yii::createObject([
-            'class' => SendSmsJob::class,
-            'phone' => $phone,
-            'text' => $text,
+            'class' => CreateBookSmsNotificationsJob::class,
+            'bookId' => $bookId,
         ]));
     }
 }

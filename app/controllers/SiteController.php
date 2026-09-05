@@ -6,6 +6,7 @@ namespace app\controllers;
 
 use app\models\ContactForm;
 use app\models\LoginForm;
+use app\services\BookService;
 use app\services\UserService;
 use Yii;
 use yii\base\Module;
@@ -20,6 +21,7 @@ class SiteController extends Controller
         string $id,
         Module $module,
         private readonly UserService $userService,
+        private readonly BookService $bookService,
         array $config = [],
     ) {
         parent::__construct($id, $module, $config);
@@ -63,7 +65,9 @@ class SiteController extends Controller
 
     public function actionIndex(): string
     {
-        return $this->render('index');
+        return $this->render('index', [
+            'dataProvider' => $this->bookService->list(),
+        ]);
     }
 
     public function actionLogin(): Response|string
@@ -78,6 +82,8 @@ class SiteController extends Controller
                 $model->login,
                 $model->password,
                 filter_var($model->rememberMe, FILTER_VALIDATE_BOOLEAN),
+                Yii::$app->request->userIP,
+                Yii::$app->request->userAgent,
             )) {
                 return $this->goBack();
             }

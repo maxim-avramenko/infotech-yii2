@@ -1,44 +1,52 @@
 <?php
 
+declare(strict_types=1);
+
 namespace tests\unit\models;
 
 use app\models\User;
+use app\models\UserRole;
+use tests\unit\DbTestCase;
 
-class UserTest extends \Codeception\Test\Unit
+class UserTest extends DbTestCase
 {
-    public function testFindUserById()
+    public function testIdentityAndPassword(): void
     {
-        verify($user = User::findIdentity(100))->notEmpty();
-        verify($user->username)->equals('admin');
+        $user = $this->createUser([
+            'email' => 'admin@example.com',
+            'phone' => '79001112233',
+            'password' => 'adminpass',
+            'auth_key' => 'test-key',
+            'role' => UserRole::Administrator->value,
+        ]);
 
-        verify(User::findIdentity(999))->empty();
+        verify(User::findIdentity($user->id)?->email)->equals('admin@example.com');
+        verify(User::findIdentity(999999))->null();
+        verify(User::findIdentityByAccessToken('any'))->null();
+        verify(User::findByEmail('admin@example.com')?->id)->equals($user->id);
+        verify($user->getId())->equals((int) $user->id);
+        verify($user->getAuthKey())->equals('test-key');
+        verify($user->validateAuthKey('test-key'))->true();
+        verify($user->validateAuthKey('other'))->false();
+        verify($user->validatePassword('adminpass'))->true();
+        verify($user->validatePassword('wrong'))->false();
+        verify($user->getUserRole())->equals(UserRole::Administrator);
+        verify($user->isAdministrator())->true();
+        verify($this->createUser(['role' => UserRole::User->value])->isAdministrator())->false();
+        verify($user->tableName())->equals('{{%user}}');
     }
 
-    public function testFindUserByAccessToken()
+    public function testRulesRequireUniqueEmail(): void
     {
-        verify($user = User::findIdentityByAccessToken('100-token'))->notEmpty();
-        verify($user->username)->equals('admin');
-
-        verify(User::findIdentityByAccessToken('non-existing'))->empty();        
+        $this->createUser(['email' => 'dup@example.com', 'phone' => '79000000001']);
+        $copy = new User([
+            'email' => 'dup@example.com',
+            'phone' => '79000000002',
+            'password_hash' => 'x',
+            'auth_key' => 'k',
+            'role' => UserRole::User->value,
+        ]);
+        verify($copy->validate())->false();
+        verify($copy->errors)->arrayHasKey('email');
     }
-
-    public function testFindUserByUsername()
-    {
-        verify($user = User::findByUsername('admin'))->notEmpty();
-        verify(User::findByUsername('not-admin'))->empty();
-    }
-
-    /**
-     * @depends testFindUserByUsername
-     */
-    public function testValidateUser()
-    {
-        $user = User::findByUsername('admin');
-        verify($user->validateAuthKey('test100key'))->notEmpty();
-        verify($user->validateAuthKey('test102key'))->empty();
-
-        verify($user->validatePassword('admin'))->notEmpty();
-        verify($user->validatePassword('123456'))->empty();        
-    }
-
 }

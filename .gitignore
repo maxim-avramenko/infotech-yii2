@@ -4,6 +4,8 @@ app/runtime/*
 !app/runtime/.gitignore
 app/web/assets/*
 !app/web/assets/.gitignore
+app/web/books/*
+!app/web/books/.gitignore
 .idea/
 .DS_Store
 /CREDS.md

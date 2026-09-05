@@ -22,6 +22,11 @@ services:
     restart: unless-stopped
     volumes: *app-code
 
+  sms-send:
+    image: infotech-yii2-php:8.4-prod
+    restart: unless-stopped
+    volumes: *app-code
+
   nginx:
     restart: unless-stopped
     volumes:

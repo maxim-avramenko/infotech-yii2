@@ -13,6 +13,9 @@ RUN apk add --no-cache \
         libmemcached-dev \
         zlib-dev \
         cyrus-sasl-dev \
+        imagemagick \
+        imagemagick-dev \
+        libgomp \
         linux-headers \
         $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -27,8 +30,8 @@ RUN apk add --no-cache \
         intl \
         bcmath \
         sockets \
-    && pecl install redis memcached \
-    && docker-php-ext-enable redis memcached \
+    && pecl install redis memcached imagick \
+    && docker-php-ext-enable redis memcached imagick \
     && apk del $PHPIZE_DEPS linux-headers
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
